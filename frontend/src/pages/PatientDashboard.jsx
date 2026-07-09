@@ -284,16 +284,16 @@ function PatientDashboard() {
         
         {/* HEADER PROFILE OVERVIEW */}
         <div className="glass-panel p-6 md:p-8 flex flex-col justify-between md:flex-row gap-6 items-center animate-slide-up">
-          <div className="flex items-center gap-5">
-            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 text-white flex items-center justify-center text-3xl font-black shadow-md border-4 border-white">
+          <div className="flex flex-col md:flex-row items-center gap-5 text-center md:text-left w-full md:w-auto">
+            <div className="shrink-0 h-20 w-20 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 text-white flex items-center justify-center text-3xl font-black shadow-md border-4 border-white">
               {userData?.name.charAt(0)}
             </div>
-            <div>
-              <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Welcome, {userData?.name}</h1>
-              <p className="text-sm text-slate-500 mt-2 flex flex-wrap items-center gap-3 font-medium">
-                <span className="flex items-center gap-1 font-mono bg-slate-100 px-2.5 py-1 rounded-md text-slate-600 font-bold border border-slate-200">{userData?.patient_code || "PAT-XXXX"}</span>
-                <span className="flex items-center gap-1"><Mail size={16} /> {userData?.email}</span>
-                <span className="flex items-center gap-1"><Smartphone size={16} /> {userData?.phone}</span>
+            <div className="flex flex-col items-center md:items-start w-full">
+              <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight break-words">Welcome, {userData?.name}</h1>
+              <p className="text-sm text-slate-500 mt-3 flex flex-col md:flex-row items-center gap-2 md:gap-3 font-medium">
+                <span className="inline-flex items-center justify-center font-mono bg-slate-100 px-3 py-1 rounded-md text-slate-600 font-bold border border-slate-200">{userData?.patient_code || "PAT-XXXX"}</span>
+                <span className="flex items-center gap-1.5"><Mail size={16} /> <span className="truncate">{userData?.email}</span></span>
+                <span className="flex items-center gap-1.5"><Smartphone size={16} /> {userData?.phone}</span>
               </p>
             </div>
           </div>

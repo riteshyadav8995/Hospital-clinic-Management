@@ -8,7 +8,7 @@ function UserLayout() {
   const isDashboard = location.pathname === "/dashboard";
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-white text-gray-800">
+    <div className="min-h-screen flex flex-col justify-between bg-white text-gray-800 overflow-x-hidden w-full max-w-[100vw]">
       <Navbar />
       <div className="flex-grow">
         <Outlet />
