@@ -375,9 +375,9 @@ function PatientDashboard() {
               <div className="space-y-6">
                 
                 {/* SECTION A: UPCOMING */}
-                <div className="glass-panel p-8 animate-slide-up" style={{ animationDelay: '0.3s' }}>
-                  <h3 className="text-2xl font-extrabold text-slate-900 flex items-center gap-3 mb-6 pb-4 border-b border-slate-200/60 tracking-tight">
-                    <CalendarDays className="text-teal-600" size={24} /> Upcoming Appointments
+                <div className="glass-panel p-6 md:p-8 animate-slide-up" style={{ animationDelay: '0.3s' }}>
+                  <h3 className="text-xl md:text-2xl font-extrabold text-slate-900 flex items-center gap-3 mb-6 pb-4 border-b border-slate-200/60 tracking-tight break-words">
+                    <CalendarDays className="text-teal-600 shrink-0" size={24} /> <span className="break-words">Upcoming Appointments</span>
                   </h3>
                   
                   {loading ? (
@@ -388,8 +388,8 @@ function PatientDashboard() {
                     <div className="space-y-5">
                       {upcomingAppts.map((appt) => (
                         <div key={appt.id} className="p-6 bg-white rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-5 shadow-sm border border-slate-100 hover:shadow-md transition-all hover:-translate-y-0.5">
-                          <div>
-                            <div className="flex gap-3 items-center">
+                          <div className="w-full">
+                            <div className="flex flex-wrap gap-2 items-center">
                               <h4 className="font-extrabold text-slate-900 text-lg tracking-tight">{appt.department}</h4>
                               <span className={`px-2.5 py-1 rounded-md text-xs font-bold border shadow-sm ${getStatusClass(appt.status)}`}>
                                 {appt.status}
@@ -434,9 +434,9 @@ function PatientDashboard() {
                 </div>
 
                 {/* SECTION B: PAST HISTORY */}
-                <div className="glass-panel p-8 animate-slide-up" style={{ animationDelay: '0.4s' }}>
-                  <h3 className="text-2xl font-extrabold text-slate-900 flex items-center gap-3 mb-6 pb-4 border-b border-slate-200/60 tracking-tight">
-                    <CheckCircle className="text-teal-600" size={24} /> Past Consultations History
+                <div className="glass-panel p-6 md:p-8 animate-slide-up" style={{ animationDelay: '0.4s' }}>
+                  <h3 className="text-xl md:text-2xl font-extrabold text-slate-900 flex items-center gap-3 mb-6 pb-4 border-b border-slate-200/60 tracking-tight break-words">
+                    <CheckCircle className="text-teal-600 shrink-0" size={24} /> <span className="break-words">Past Consultations</span>
                   </h3>
                   
                   {loading ? (
@@ -447,14 +447,14 @@ function PatientDashboard() {
                     <div className="space-y-5">
                       {pastAppts.map((appt) => (
                         <div key={appt.id} className="p-6 bg-white/50 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-5 border border-slate-200 hover:bg-white hover:shadow-sm transition-all">
-                          <div>
-                            <div className="flex gap-3 items-center">
+                          <div className="w-full">
+                            <div className="flex flex-wrap gap-2 items-center">
                               <h4 className="font-extrabold text-slate-800 text-lg tracking-tight">{appt.department}</h4>
                               <span className={`px-2.5 py-1 rounded-md text-xs font-bold border shadow-sm ${getStatusClass(appt.status)}`}>
                                 {appt.status}
                               </span>
                               {appt.token_no && (
-                                <span className="bg-slate-900 text-white text-xs font-mono font-bold px-3 py-1 rounded-md shadow-sm border border-slate-700">
+                                <span className="bg-slate-900 text-white text-xs font-mono font-bold px-3 py-1 rounded-md shadow-sm border border-slate-700 break-all">
                                   {appt.token_no}
                                 </span>
                               )}
