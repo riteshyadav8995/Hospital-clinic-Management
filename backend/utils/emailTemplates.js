@@ -98,9 +98,9 @@ const welcomeEmailTemplate = ({ name, email }) => {
 
 /**
  * Appointment confirmation email sent to patient after booking.
- * @param {{ name: string, department: string, preferred_date: string, preferred_time: string, appointmentId: number, email: string }} param0
+ * @param {{ name: string, department: string, preferred_date: string, preferred_time: string, appointmentId: number, email: string, fee: number }} param0
  */
-const appointmentConfirmationTemplate = ({ name, department, preferred_date, preferred_time, appointmentId, email }) => {
+const appointmentConfirmationTemplate = ({ name, department, preferred_date, preferred_time, appointmentId, email, fee }) => {
   const formattedDate = preferred_date
     ? new Date(preferred_date).toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
     : "To be confirmed";
@@ -139,9 +139,15 @@ const appointmentConfirmationTemplate = ({ name, department, preferred_date, pre
           </td>
         </tr>
         <tr>
-          <td style="padding:8px 0;">
+          <td style="padding:8px 0;border-bottom:1px solid #e5e7eb;">
             <span style="color:#9ca3af;font-size:12px;font-weight:700;text-transform:uppercase;">Preferred Time</span><br/>
             <span style="color:#111827;font-size:15px;font-weight:700;">🕐 ${preferred_time || "Flexible"}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;">
+            <span style="color:#9ca3af;font-size:12px;font-weight:700;text-transform:uppercase;">Consultation Fee</span><br/>
+            <span style="color:#111827;font-size:15px;font-weight:700;">₹${fee}</span>
           </td>
         </tr>
       </table>
@@ -168,9 +174,9 @@ const appointmentConfirmationTemplate = ({ name, department, preferred_date, pre
 
 /**
  * Admin alert email sent when a new appointment is booked.
- * @param {{ name: string, phone: string, email: string, department: string, preferred_date: string, preferred_time: string, appointmentId: number }} param0
+ * @param {{ name: string, phone: string, email: string, department: string, preferred_date: string, preferred_time: string, appointmentId: number, fee: number }} param0
  */
-const adminAppointmentAlertTemplate = ({ name, phone, email, department, preferred_date, preferred_time, appointmentId }) => {
+const adminAppointmentAlertTemplate = ({ name, phone, email, department, preferred_date, preferred_time, appointmentId, fee }) => {
   const formattedDate = preferred_date
     ? new Date(preferred_date).toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
     : "Not specified";
@@ -189,6 +195,7 @@ const adminAppointmentAlertTemplate = ({ name, phone, email, department, preferr
         <tr><td style="padding:6px 0;border-top:1px solid #fecaca;"><span style="color:#6b7280;font-size:12px;">Department:</span><br/><strong style="color:#0f766e;">${department}</strong></td></tr>
         <tr><td style="padding:6px 0;border-top:1px solid #fecaca;"><span style="color:#6b7280;font-size:12px;">Preferred Date:</span><br/><strong>${formattedDate}</strong></td></tr>
         <tr><td style="padding:6px 0;border-top:1px solid #fecaca;"><span style="color:#6b7280;font-size:12px;">Preferred Time:</span><br/><strong>${preferred_time || "Flexible"}</strong></td></tr>
+        <tr><td style="padding:6px 0;border-top:1px solid #fecaca;"><span style="color:#6b7280;font-size:12px;">Consultation Fee:</span><br/><strong>₹${fee}</strong></td></tr>
       </table>
     </div>
 
@@ -200,8 +207,41 @@ const adminAppointmentAlertTemplate = ({ name, phone, email, department, preferr
   return emailWrapper(content);
 };
 
+/**
+ * Doctor alert email sent when a new appointment is booked.
+ * @param {{ name: string, phone: string, email: string, department: string, preferred_date: string, preferred_time: string, appointmentId: number, fee: number, doctorName: string }} param0
+ */
+const doctorAppointmentAlertTemplate = ({ name, phone, email, department, preferred_date, preferred_time, appointmentId, fee, doctorName }) => {
+  const formattedDate = preferred_date
+    ? new Date(preferred_date).toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+    : "Not specified";
+
+  const content = `
+    <h2 style="margin:0 0 8px;color:#0f766e;font-size:22px;font-weight:800;">🔔 New Appointment Booking</h2>
+    <p style="margin:0 0 24px;color:#6b7280;font-size:14px;">Hello Dr. ${doctorName}, you have a new appointment scheduled.</p>
+
+    <div style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:12px;padding:20px 24px;margin-bottom:20px;">
+      <p style="margin:0 0 14px;color:#0f766e;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;">Patient Information</p>
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr><td style="padding:6px 0;"><span style="color:#6b7280;font-size:12px;">Appointment ID:</span><br/><strong>#${appointmentId}</strong></td></tr>
+        <tr><td style="padding:6px 0;border-top:1px solid #99f6e4;"><span style="color:#6b7280;font-size:12px;">Patient Name:</span><br/><strong>${name}</strong></td></tr>
+        <tr><td style="padding:6px 0;border-top:1px solid #99f6e4;"><span style="color:#6b7280;font-size:12px;">Preferred Date:</span><br/><strong>${formattedDate}</strong></td></tr>
+        <tr><td style="padding:6px 0;border-top:1px solid #99f6e4;"><span style="color:#6b7280;font-size:12px;">Preferred Time:</span><br/><strong>${preferred_time || "Flexible"}</strong></td></tr>
+        <tr><td style="padding:6px 0;border-top:1px solid #99f6e4;"><span style="color:#6b7280;font-size:12px;">Consultation Fee:</span><br/><strong>₹${fee}</strong></td></tr>
+      </table>
+    </div>
+
+    <a href="${FRONTEND_URL}/doctor-dashboard"
+       style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;">
+      Open Doctor Dashboard →
+    </a>
+  `;
+  return emailWrapper(content);
+};
+
 module.exports = {
   welcomeEmailTemplate,
   appointmentConfirmationTemplate,
   adminAppointmentAlertTemplate,
+  doctorAppointmentAlertTemplate,
 };

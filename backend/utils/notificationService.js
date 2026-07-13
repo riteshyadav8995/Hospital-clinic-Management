@@ -193,15 +193,15 @@ const sendRegistrationNotifications = async ({ userId, name, email, phone }) => 
 };
 
 /**
- * Send appointment confirmation email to patient + alert email to admin.
+ * Send appointment confirmation email to patient + alert emails to admin and doctor.
  * Fire-and-forget (never throws).
  * @param {{ userId: number, name: string, email: string, phone: string, department: string,
- *           preferred_date: string, preferred_time: string, appointmentId: number }} param0
+ *           preferred_date: string, preferred_time: string, appointmentId: number, fee: number, doctorEmail: string, doctorName: string }} param0
  */
 const sendAppointmentNotifications = async ({
-  userId, name, email, phone, department, preferred_date, preferred_time, appointmentId,
+  userId, name, email, phone, department, preferred_date, preferred_time, appointmentId, fee, doctorEmail, doctorName
 }) => {
-  const { appointmentConfirmationTemplate, adminAppointmentAlertTemplate } = require("./emailTemplates");
+  const { appointmentConfirmationTemplate, adminAppointmentAlertTemplate, doctorAppointmentAlertTemplate } = require("./emailTemplates");
 
   const clinicName  = process.env.CLINIC_NAME  || "Ayurda Hospital and Clinics";
   const adminEmail  = process.env.ADMIN_EMAIL  || process.env.SMTP_USER;
@@ -210,7 +210,7 @@ const sendAppointmentNotifications = async ({
   if (email) {
     let patientHtml;
     try {
-      patientHtml = appointmentConfirmationTemplate({ name, department, preferred_date, preferred_time, appointmentId, email });
+      patientHtml = appointmentConfirmationTemplate({ name, department, preferred_date, preferred_time, appointmentId, email, fee });
       console.log(`[Email Flow Debug] appointmentConfirmationTemplate successfully generated HTML for "${email}"`);
     } catch (templateErr) {
       console.error(`[Email Flow Debug] appointmentConfirmationTemplate threw a hidden error:`, templateErr);
@@ -231,7 +231,7 @@ const sendAppointmentNotifications = async ({
   if (adminEmail) {
     let adminHtml;
     try {
-      adminHtml = adminAppointmentAlertTemplate({ name, phone, email, department, preferred_date, preferred_time, appointmentId });
+      adminHtml = adminAppointmentAlertTemplate({ name, phone, email, department, preferred_date, preferred_time, appointmentId, fee });
       console.log(`[Email Flow Debug] adminAppointmentAlertTemplate successfully generated HTML for "${adminEmail}"`);
     } catch (templateErr) {
       console.error(`[Email Flow Debug] adminAppointmentAlertTemplate threw a hidden error:`, templateErr);
@@ -242,6 +242,27 @@ const sendAppointmentNotifications = async ({
         to: adminEmail,
         subject: `[${clinicName}] New Appointment #${appointmentId} — ${department}`,
         html: adminHtml,
+        userId,
+        eventType: "Appointment",
+      });
+    }
+  }
+
+  // 3. Doctor Alert Email
+  if (doctorEmail) {
+    let doctorHtml;
+    try {
+      doctorHtml = doctorAppointmentAlertTemplate({ name, phone, email, department, preferred_date, preferred_time, appointmentId, fee, doctorName });
+      console.log(`[Email Flow Debug] doctorAppointmentAlertTemplate successfully generated HTML for "${doctorEmail}"`);
+    } catch (templateErr) {
+      console.error(`[Email Flow Debug] doctorAppointmentAlertTemplate threw a hidden error:`, templateErr);
+    }
+
+    if (doctorHtml) {
+      await sendEmail({
+        to: doctorEmail,
+        subject: `[${clinicName}] New Appointment #${appointmentId} for Dr. ${doctorName}`,
+        html: doctorHtml,
         userId,
         eventType: "Appointment",
       });

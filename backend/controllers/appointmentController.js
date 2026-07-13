@@ -30,11 +30,12 @@ const createAppointment = async (req, res) => {
     const patient_id = patient.id;
 
     // 2. Get doctor info
-    const docRes = await db.query("SELECT u.name, d.department_name as department FROM doctors d JOIN users u ON d.user_id = u.id WHERE d.id = $1", [doctor_id]);
+    const docRes = await db.query("SELECT u.name, u.email, d.department_name as department, d.fee FROM doctors d JOIN users u ON d.user_id = u.id WHERE d.id = $1", [doctor_id]);
     if (docRes.rows.length === 0) {
       return res.status(404).json({ success: false, message: "Doctor not found." });
     }
     const doctor = docRes.rows[0];
+    const fee = parseFloat(doctor.fee) > 0 ? parseFloat(doctor.fee) : 500.00;
 
     // 3. Generate token
     const dateStr = preferred_date.replace(/-/g, '');
@@ -63,8 +64,8 @@ const createAppointment = async (req, res) => {
     const invoiceNo = `INV-${Date.now()}`;
     await db.query(`
       INSERT INTO invoices (invoice_no, patient_id, total, payable, status)
-      VALUES ($1, $2, 500.00, 500.00, 'Unpaid')
-    `, [invoiceNo, patient_id]);
+      VALUES ($1, $2, $3, $4, 'Unpaid')
+    `, [invoiceNo, patient_id, fee, fee]);
 
     res.status(201).json({
       success: true,
@@ -83,7 +84,9 @@ const createAppointment = async (req, res) => {
         preferred_date: preferred_date || null,
         preferred_time: preferred_time || null,
         appointmentId,
-        token_no
+        fee,
+        doctorEmail: doctor.email,
+        doctorName: doctor.name
       }).catch((err) =>
         console.error("[Appointment] Notification error (non-fatal):", err.message)
       );

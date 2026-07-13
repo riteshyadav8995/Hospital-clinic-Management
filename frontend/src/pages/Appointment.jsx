@@ -95,32 +95,42 @@ function Appointment() {
   const generateTimeSlots = (availableTime) => {
     if (!availableTime) return [];
     
-    // Attempt to extract times like "9:00 am - 6:00 pm"
-    const timeRegex = /(\d{1,2}:\d{2})\s*(am|pm|AM|PM)/g;
+    // Attempt to extract times like "9:00 am - 6:00 pm" or "10am-5pm"
+    const timeRegex = /(\d{1,2})(:\d{2})?\s*(am|pm|AM|PM)/g;
     const matches = [...availableTime.matchAll(timeRegex)];
     
+    const fallbackSlots = [
+      "09:00 AM - 09:30 AM", "09:30 AM - 10:00 AM", "10:00 AM - 10:30 AM", "10:30 AM - 11:00 AM", 
+      "11:00 AM - 11:30 AM", "11:30 AM - 12:00 PM", "12:00 PM - 12:30 PM", "02:00 PM - 02:30 PM", 
+      "02:30 PM - 03:00 PM", "03:00 PM - 03:30 PM", "03:30 PM - 04:00 PM", "04:00 PM - 04:30 PM", 
+      "04:30 PM - 05:00 PM"
+    ];
+
     if (matches.length < 2) {
       // Fallback if parsing fails
-      return ["09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "02:00 PM", "02:30 PM", "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM", "05:00 PM", "05:30 PM"];
+      return fallbackSlots;
     }
 
-    const parseToDate = (timeStr, modifier) => {
-      let [hours, minutes] = timeStr.split(':');
-      hours = parseInt(hours, 10);
+    const parseToDate = (hoursStr, minutesStr, modifier) => {
+      let hours = parseInt(hoursStr, 10);
+      let minutes = minutesStr ? parseInt(minutesStr.replace(':', ''), 10) : 0;
       if (hours === 12) {
         hours = modifier.toLowerCase() === 'pm' ? 12 : 0;
       } else if (modifier.toLowerCase() === 'pm') {
         hours += 12;
       }
       const d = new Date();
-      d.setHours(hours, parseInt(minutes, 10), 0, 0);
+      d.setHours(hours, minutes, 0, 0);
       return d;
     };
 
     try {
-      const startTime = parseToDate(matches[0][1], matches[0][2]);
-      const endTime = parseToDate(matches[1][1], matches[1][2]);
+      const startTime = parseToDate(matches[0][1], matches[0][2], matches[0][3]);
+      let endTime = parseToDate(matches[1][1], matches[1][2], matches[1][3]);
       
+      // If end time is somehow parsed as earlier or equal, just add 12 hours (e.g. 10am - 5 (missing pm) could break)
+      if (endTime <= startTime) endTime.setHours(endTime.getHours() + 12);
+
       const slots = [];
       let current = new Date(startTime);
       
@@ -128,21 +138,32 @@ function Appointment() {
         let h = current.getHours();
         let m = current.getMinutes();
         const ampm = h >= 12 ? 'PM' : 'AM';
-        h = h % 12;
-        h = h ? h : 12;
-        const formatted = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${ampm}`;
+        let h12 = h % 12;
+        h12 = h12 ? h12 : 12;
+        const formatted = `${h12.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${ampm}`;
         
+        let endCurrent = new Date(current);
+        endCurrent.setMinutes(endCurrent.getMinutes() + 30);
+        let eh = endCurrent.getHours();
+        let em = endCurrent.getMinutes();
+        const eampm = eh >= 12 ? 'PM' : 'AM';
+        let eh12 = eh % 12;
+        eh12 = eh12 ? eh12 : 12;
+        const eformatted = `${eh12.toString().padStart(2, '0')}:${em.toString().padStart(2, '0')} ${eampm}`;
+
+        const slotRange = `${formatted} - ${eformatted}`;
+
         // Skip lunch break (1 PM - 2 PM)
-        if (!(current.getHours() >= 13 && current.getHours() < 14)) {
-          slots.push(formatted);
+        if (!(current.getHours() >= 13 && current.getHours() < 14) && endCurrent <= endTime) {
+          slots.push(slotRange);
         }
         
         current.setMinutes(current.getMinutes() + 30);
       }
-      return slots.length > 0 ? slots : ["09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "02:00 PM", "02:30 PM", "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM"];
+      return slots.length > 0 ? slots : fallbackSlots;
     } catch(err) {
       console.error("Time parsing error", err);
-      return ["09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "02:00 PM", "02:30 PM", "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM"];
+      return fallbackSlots;
     }
   };
 

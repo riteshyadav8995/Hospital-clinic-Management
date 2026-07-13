@@ -164,49 +164,52 @@ exports.verifyPayment = async (req, res) => {
       const appt = {
         ...fetchResult.rows[0],
         name: fetchResult.rows[0].patient_name || fetchResult.rows[0].name || "",
-        email: fetchResult.rows[0].email || `${(fetchResult.rows[0].patient_name || fetchResult.rows[0].name || "").toLowerCase().replace(/\s+/g, "")}@example.com`,
+        email: fetchResult.rows[0].email || null,
       };
       
-      // Send Email Notification
-      const emailSubject = `Appointment Confirmed - Ayurda Hospital and Clinics`;
-      const emailBody = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px;">
-          <h2 style="color: #0f766e; text-align: center;">Ayurda Hospital and Clinics Booking Confirmation</h2>
-          <p>Dear <strong>${appt.name}</strong>,</p>
-          <p>Thank you for booking with us. Your appointment inquiry has been paid and confirmed successfully!</p>
-          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 8px 0; color: #718096;"><strong>Department:</strong></td>
-              <td style="padding: 8px 0;">${appt.department}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #718096;"><strong>Preferred Date:</strong></td>
-              <td style="padding: 8px 0;">${new Date(appt.preferred_date).toLocaleDateString()}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #718096;"><strong>Preferred Session:</strong></td>
-              <td style="padding: 8px 0;">${appt.preferred_time || "Not selected"}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #718096;"><strong>Payment Status:</strong></td>
-              <td style="padding: 8px 0; color: #16a34a; font-weight: bold;">Paid (₹500.00)</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #718096;"><strong>Transaction ID:</strong></td>
-              <td style="padding: 8px 0; font-family: monospace;">${razorpay_payment_id}</td>
-            </tr>
-          </table>
-          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-          <p style="text-align: center; color: #718096; font-size: 12px;">This is an automated confirmation email. For any queries, call us at 7799889398.</p>
-        </div>
-      `;
+      // Send Email Notification if email exists
+      if (appt.email) {
+        const emailSubject = `Appointment Confirmed - Ayurda Hospital and Clinics`;
+        const emailBody = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px;">
+            <h2 style="color: #0f766e; text-align: center;">Ayurda Hospital and Clinics Booking Confirmation</h2>
+            <p>Dear <strong>${appt.name}</strong>,</p>
+            <p>Thank you for booking with us. Your appointment inquiry has been paid and confirmed successfully!</p>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; color: #718096;"><strong>Department:</strong></td>
+                <td style="padding: 8px 0;">${appt.department}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #718096;"><strong>Preferred Date:</strong></td>
+                <td style="padding: 8px 0;">${new Date(appt.preferred_date).toLocaleDateString()}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #718096;"><strong>Preferred Session:</strong></td>
+                <td style="padding: 8px 0;">${appt.preferred_time || "Not selected"}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #718096;"><strong>Payment Status:</strong></td>
+                <td style="padding: 8px 0; color: #16a34a; font-weight: bold;">Paid</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #718096;"><strong>Transaction ID:</strong></td>
+                <td style="padding: 8px 0; font-family: monospace;">${razorpay_payment_id}</td>
+              </tr>
+            </table>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+            <p style="text-align: center; color: #718096; font-size: 12px;">This is an automated confirmation email. For any queries, call us at 7799889398.</p>
+          </div>
+        `;
 
-      await sendEmail(
-        appt.email,
-        emailSubject,
-        emailBody
-      );
+        await sendEmail({
+          to: appt.email,
+          subject: emailSubject,
+          html: emailBody,
+          eventType: "Payment Confirmed"
+        });
+      }
 
       // Send WhatsApp Notification
       const whatsappMsg = `Hi ${appt.name}, your Ayurda Hospital and Clinics appointment for ${appt.department} on ${new Date(appt.preferred_date).toLocaleDateString()} (${appt.preferred_time || "Anytime"}) is CONFIRMED. Payment of ₹500 is successfully verified. Txn ID: ${razorpay_payment_id}. Thank you!`;
