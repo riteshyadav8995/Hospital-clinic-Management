@@ -80,7 +80,7 @@ const sendEmail = async ({ to, subject, html, userId = null, eventType = "Genera
     console.log(`[Email Flow Debug] Recipient email BEFORE sendMail(): "${to}" (eventType: ${eventType})`);
 
     const mailOptions = {
-      from: `"${process.env.CLINIC_NAME || "Ayurda Hospital and Clinics"}" <${process.env.SMTP_USER}>`,
+      from: `"${process.env.CLINIC_NAME || "Ayurda Hospital and Clinics"}" <${process.env.SENDER_EMAIL || process.env.SMTP_USER}>`,
       to,
       subject,
       html,
