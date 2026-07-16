@@ -17,4 +17,9 @@ db.connect((err, client, release) => {
   release();
 });
 
+// Prevent Node.js from crashing when Neon serverless database drops idle connections
+db.on('error', (err, client) => {
+  console.error('Unexpected error on idle database client (Neon auto-suspend):', err.message);
+});
+
 module.exports = db;

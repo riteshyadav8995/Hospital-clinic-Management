@@ -22,8 +22,8 @@ const transporter = nodemailer.createTransport({
   port: parseInt(process.env.SMTP_PORT || "587", 10),
   secure: false,        // true for port 465, false for 587
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: process.env.EMAIL_USER || process.env.SMTP_USER,
+    pass: process.env.EMAIL_PASS || process.env.SMTP_PASS,
   },
 });
 
@@ -80,7 +80,7 @@ const sendEmail = async ({ to, subject, html, userId = null, eventType = "Genera
     console.log(`[Email Flow Debug] Recipient email BEFORE sendMail(): "${to}" (eventType: ${eventType})`);
 
     const mailOptions = {
-      from: `"${process.env.CLINIC_NAME || "Ayurda Hospital and Clinics"}" <${process.env.SENDER_EMAIL || process.env.SMTP_USER}>`,
+      from: `"${process.env.CLINIC_NAME || "Ayurda Hospital and Clinics"}" <${process.env.SMTP_FROM_EMAIL || process.env.SENDER_EMAIL || process.env.EMAIL_USER || process.env.SMTP_USER}>`,
       to,
       subject,
       html,
@@ -204,7 +204,7 @@ const sendAppointmentNotifications = async ({
   const { appointmentConfirmationTemplate, adminAppointmentAlertTemplate, doctorAppointmentAlertTemplate } = require("./emailTemplates");
 
   const clinicName  = process.env.CLINIC_NAME  || "Ayurda Hospital and Clinics";
-  const adminEmail  = process.env.ADMIN_EMAIL  || process.env.SMTP_USER;
+  const adminEmail  = process.env.ADMIN_EMAIL  || process.env.SMTP_FROM_EMAIL || process.env.SENDER_EMAIL || process.env.EMAIL_USER || process.env.SMTP_USER;
 
   // 1. Patient Confirmation Email (only if patient provided an email)
   if (email) {

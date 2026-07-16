@@ -6,8 +6,8 @@ const sendEmail = async (to, subject, htmlContent) => {
   // Graceful check if SMTP is configured
   if (
     !process.env.SMTP_HOST ||
-    !process.env.SMTP_USER ||
-    !process.env.SMTP_PASS
+    (!process.env.EMAIL_USER && !process.env.SMTP_USER) ||
+    (!process.env.EMAIL_PASS && !process.env.SMTP_PASS)
   ) {
     console.warn("SMTP credentials not configured in .env. Skipping email sending.");
     return false;
@@ -19,8 +19,8 @@ const sendEmail = async (to, subject, htmlContent) => {
       port: process.env.SMTP_PORT || 587,
       secure: process.env.SMTP_PORT == 465, // true for 465, false for others
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: process.env.EMAIL_USER || process.env.SMTP_USER,
+        pass: process.env.EMAIL_PASS || process.env.SMTP_PASS,
       },
     });
 
@@ -28,7 +28,7 @@ const sendEmail = async (to, subject, htmlContent) => {
     console.log(`[Email Flow Debug Helper] Recipient email BEFORE sendMail(): "${to}"`);
 
     const info = await transporter.sendMail({
-      from: `"${process.env.EMAIL_FROM_NAME || 'Ayurda Clinics'}" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+      from: `"${process.env.EMAIL_FROM_NAME || 'Ayurda Clinics'}" <${process.env.SMTP_FROM_EMAIL || process.env.SENDER_EMAIL || process.env.EMAIL_USER || process.env.SMTP_USER}>`,
       to,
       subject,
       html: htmlContent,
