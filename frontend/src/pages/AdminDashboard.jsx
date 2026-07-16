@@ -158,9 +158,13 @@ function AdminDashboard({ activeSection = "appointments" }) {
   const fetchData = async () => {
     setLoading(true);
     try {
+      const apptsPromise = (adminRole === "Doctor" || adminRole === "Nurse")
+        ? api.get("/appointments/doctor-queue").then(res => ({ data: { appointments: res.data.queue } }))
+        : api.get("/appointments");
+
       // Fetch data in parallel, ignoring individual failures (e.g., 403 Forbidden for Doctors)
       const [apptsRes, doctorsRes, servicesRes, testimonialsRes, storiesRes, faqsRes, deptsRes] = await Promise.allSettled([
-        api.get("/appointments"),
+        apptsPromise,
         api.get("/doctors"),
         api.get("/services"),
         api.get("/testimonials"),
@@ -323,8 +327,8 @@ function AdminDashboard({ activeSection = "appointments" }) {
     const matchesStatus = statusFilter === "All" || item.status === statusFilter;
 
     let matchesDate = true;
-    if (item.preferred_date) {
-      const appointmentDate = new Date(item.preferred_date);
+    if (item.date) {
+      const appointmentDate = new Date(item.date);
       const today = new Date();
       appointmentDate.setHours(0, 0, 0, 0);
       today.setHours(0, 0, 0, 0);
@@ -335,10 +339,12 @@ function AdminDashboard({ activeSection = "appointments" }) {
         matchesDate = appointmentDate.getTime() >= today.getTime();
       } else if (dateFilter === "Past") {
         matchesDate = appointmentDate.getTime() < today.getTime();
-      } else if (dateFilter === "Custom") {
-        matchesDate =
-          customDate &&
-          appointmentDate.toISOString().split("T")[0] === customDate;
+      } else if (dateFilter === "Custom" && customDate) {
+        const year = appointmentDate.getFullYear();
+        const month = String(appointmentDate.getMonth() + 1).padStart(2, '0');
+        const day = String(appointmentDate.getDate()).padStart(2, '0');
+        const localDateStr = `${year}-${month}-${day}`;
+        matchesDate = localDateStr === customDate;
       }
     } else if (dateFilter !== "All") {
       matchesDate = false;
@@ -665,26 +671,35 @@ function AdminDashboard({ activeSection = "appointments" }) {
 
   // STATS & CHARTS MATHS
   const total = appointments.length;
-  const pending = appointments.filter((a) => a.status === "Pending").length;
-  const contacted = appointments.filter((a) => a.status === "Contacted").length;
-  const confirmed = appointments.filter((a) => a.status === "Confirmed").length;
-  const completed = appointments.filter((a) => a.status === "Completed").length;
 
-  const departmentChartData = [
-    { name: "Dental", count: appointments.filter((a) => a.department === "Dental Care").length },
-    { name: "Derma", count: appointments.filter((a) => a.department === "Dermatology").length },
-    { name: "IVF", count: appointments.filter((a) => a.department === "IVF & Fertility").length },
-    { name: "Eye", count: appointments.filter((a) => a.department === "Eye Care").length },
-  ];
+  const departmentChartData = [];
+  const deptCounts = {};
+  appointments.forEach(a => {
+    let dept = a.department || 'Unknown';
+    if(dept.length > 12) dept = dept.substring(0, 10) + '..'; // Shorten for XAxis
+    deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+  });
+  Object.keys(deptCounts).forEach(key => {
+    departmentChartData.push({ name: key, count: deptCounts[key] });
+  });
+
+  if (departmentChartData.length === 0) {
+    departmentChartData.push({ name: "No Data", count: 0 });
+  }
 
   const statusChartData = [
-    { name: "Pending", value: pending },
-    { name: "Contacted", value: contacted },
-    { name: "Confirmed", value: confirmed },
-    { name: "Completed", value: completed },
-  ];
+    { name: "Booked", value: appointments.filter(a => a.status === "Booked").length },
+    { name: "Confirmed", value: appointments.filter(a => a.status === "Confirmed").length },
+    { name: "Waiting", value: appointments.filter(a => a.status === "Waiting").length },
+    { name: "Consulting", value: appointments.filter(a => a.status === "In-Consultation").length },
+    { name: "Completed", value: appointments.filter(a => a.status === "Completed").length },
+  ].filter(s => s.value > 0);
 
-  const chartColors = ["#ca8a04", "#2563eb", "#16a34a", "#6b7280"];
+  if (statusChartData.length === 0) {
+    statusChartData.push({ name: "No Data", value: 1 });
+  }
+
+  const chartColors = ["#0ea5e9", "#10b981", "#f59e0b", "#6366f1", "#ec4899", "#8b5cf6", "#14b8a6", "#f43f5e"];
 
   const getStatusClass = (status) => {
     if (status === "Pending") return "bg-yellow-100 text-yellow-700";
@@ -802,7 +817,7 @@ function AdminDashboard({ activeSection = "appointments" }) {
                       </div>
                     )}
                     
-                    <div className="glass-panel p-6 flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                    <div onClick={() => setActiveTab("users")} className="glass-panel p-6 flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer border hover:border-teal-200">
                       <div className="flex justify-between items-start mb-4">
                         <div className="bg-gradient-to-br from-blue-400 to-blue-600 p-3 rounded-2xl text-white shadow-md group-hover:scale-110 transition-transform">
                           <Users size={24} />
@@ -813,7 +828,7 @@ function AdminDashboard({ activeSection = "appointments" }) {
                         <h2 className="mt-1 text-4xl font-extrabold text-slate-800">{reportSummary?.totalPatients || 0}</h2>
                       </div>
                     </div>
-                    <div className="glass-panel p-6 flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                    <div onClick={() => setActiveTab(adminRole === "Doctor" || adminRole === "Nurse" ? "doctor-queue" : "queue")} className="glass-panel p-6 flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer border hover:border-indigo-200">
                       <div className="flex justify-between items-start mb-4">
                         <div className="bg-gradient-to-br from-indigo-400 to-indigo-600 p-3 rounded-2xl text-white shadow-md group-hover:scale-110 transition-transform">
                           <Calendar size={24} />

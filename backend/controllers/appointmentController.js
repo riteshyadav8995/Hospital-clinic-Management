@@ -260,9 +260,10 @@ const getDoctorQueue = async (req, res) => {
     const doctor_id = docRes.rows[0].id;
 
     const sql = `
-      SELECT a.id, a.patient_id, a.token_no, a.date, a.time, a.status, p.name as patient_name, p.patient_code, p.dob, p.gender, p.blood_group
+      SELECT a.id, a.patient_id, a.token_no, a.date, a.time, a.status, p.name as patient_name, p.patient_code, p.dob, p.gender, p.blood_group, d.department_name as department
       FROM appointments a
       JOIN patients p ON a.patient_id = p.id
+      JOIN doctors d ON a.doctor_id = d.id
       WHERE a.doctor_id = $1
       ORDER BY a.date ASC, a.token_no ASC
     `;
