@@ -3,16 +3,28 @@ const twilio = require("twilio");
 
 // Email Sender Helper using Brevo REST API
 const sendEmail = async (to, subject, htmlContent) => {
-  if (!process.env.BREVO_API_KEY) {
-    console.warn("BREVO_API_KEY not configured in .env. Skipping email sending.");
-    return false;
-  }
-
   try {
+    let apiKey = process.env.BREVO_API_KEY;
+    const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SENDER_EMAIL;
+
+    if (!apiKey && process.env.BREVO_MCP_API_KEY) {
+      try {
+        const decoded = Buffer.from(process.env.BREVO_MCP_API_KEY, 'base64').toString();
+        apiKey = JSON.parse(decoded).api_key;
+      } catch (e) {
+        console.error('Failed to parse BREVO_MCP_API_KEY', e);
+      }
+    }
+
+    if (!apiKey) {
+      console.warn("BREVO_API_KEY not configured in .env. Skipping email sending.");
+      return false;
+    }
+
     const payload = {
       sender: {
         name: process.env.EMAIL_FROM_NAME || "Ayurda Clinics",
-        email: process.env.SENDER_EMAIL || process.env.SMTP_FROM_EMAIL || "rky594237@gmail.com"
+        email: fromEmail || "rky594237@gmail.com"
       },
       to: [
         {
@@ -23,18 +35,27 @@ const sendEmail = async (to, subject, htmlContent) => {
       htmlContent: htmlContent
     };
 
-    const response = await axios.post("https://api.brevo.com/v3/smtp/email", payload, {
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
       headers: {
-        "api-key": process.env.BREVO_API_KEY,
+        "api-key": apiKey,
         "Content-Type": "application/json",
         "accept": "application/json"
-      }
+      },
+      body: JSON.stringify(payload)
     });
 
-    console.log(`[Email Flow] Email sent successfully to "${to}". Message ID:`, response.data?.messageId);
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error(`[Email Flow Error] Brevo API error: ${response.status} ${errorData}`);
+      return false;
+    }
+
+    const data = await response.json();
+    console.log(`[Email Flow] Email sent successfully to "${to}". Message ID:`, data.messageId || 'Success');
     return true;
   } catch (error) {
-    console.error(`[Email Flow Error] Failed to send email to "${to}":`, error.response?.data || error.message);
+    console.error(`[Email Flow Error] Failed to send email to "${to}":`, error.message);
     return false;
   }
 };
