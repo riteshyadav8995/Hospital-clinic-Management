@@ -166,12 +166,13 @@ exports.verifyPayment = async (req, res) => {
     // Fetch updated appointment details for notifications, joining users/doctors/patients
     const fetchResult = await db.query(
       `SELECT a.*, 
-              p.name as patient_name, p.phone as patient_phone, u_pat.email as patient_email,
+              p.name as patient_name, p.phone as patient_phone,
+              u_pat.email as patient_email,
               d.department_name as department, 
               u_doc.name as doctor_name, u_doc.email as doctor_email
        FROM appointments a
        JOIN patients p ON a.patient_id = p.id
-       JOIN users u_pat ON p.user_id = u_pat.id
+       LEFT JOIN users u_pat ON u_pat.phone = p.phone
        JOIN doctors d ON a.doctor_id = d.id
        JOIN users u_doc ON d.user_id = u_doc.id
        WHERE a.id = $1`,
