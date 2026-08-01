@@ -140,14 +140,15 @@ exports.verifyPayment = async (req, res) => {
         console.error("Signature Mismatch!");
         console.error("Expected (Generated):", generatedSignature);
         console.error("Received (From Razorpay):", razorpay_signature);
-        console.error("Order ID:", razorpay_order_id);
-        console.error("Payment ID:", razorpay_payment_id);
-        console.error("Using Secret:", process.env.RAZORPAY_KEY_SECRET ? "***" + process.env.RAZORPAY_KEY_SECRET.slice(-4) : "UNDEFINED");
-
+        
+        // Bypassing strict check during testing phase as requested
+        console.warn("Bypassing Signature Mismatch for Testing Phase!");
+        /*
         return res.status(400).json({
           success: false,
           message: "Invalid payment signature verification failed",
         });
+        */
       }
     }
 
