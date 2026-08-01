@@ -20,6 +20,7 @@ import Appointment from "./pages/Appointment";
 import SymptomGuide from "./pages/SymptomGuide";
 import Testimonials from "./pages/Testimonials";
 import FAQ from "./pages/FAQ";
+import ForgotPassword from "./pages/ForgotPassword";
 
 // Protected User Pages
 import PatientDashboard from "./pages/PatientDashboard";
@@ -92,6 +93,7 @@ function App() {
           <Route path="/symptom-guide" element={<SymptomGuide />} />
           <Route path="/testimonials" element={<Testimonials />} />
           <Route path="/faq" element={<FAQ />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
 
           {/* Protected Patient Dashboard */}
           <Route

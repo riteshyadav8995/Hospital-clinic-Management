@@ -1,51 +1,40 @@
-const nodemailer = require("nodemailer");
+const axios = require("axios");
 const twilio = require("twilio");
 
-// Email Sender Helper
+// Email Sender Helper using Brevo REST API
 const sendEmail = async (to, subject, htmlContent) => {
-  // Graceful check if SMTP is configured
-  if (
-    !process.env.SMTP_HOST ||
-    (!process.env.EMAIL_USER && !process.env.SMTP_USER) ||
-    (!process.env.EMAIL_PASS && !process.env.SMTP_PASS)
-  ) {
-    console.warn("SMTP credentials not configured in .env. Skipping email sending.");
+  if (!process.env.BREVO_API_KEY) {
+    console.warn("BREVO_API_KEY not configured in .env. Skipping email sending.");
     return false;
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT || 587,
-      secure: process.env.SMTP_PORT == 465, // true for 465, false for others
-      auth: {
-        user: process.env.EMAIL_USER || process.env.SMTP_USER,
-        pass: process.env.EMAIL_PASS || process.env.SMTP_PASS,
+    const payload = {
+      sender: {
+        name: "Ayurda Clinics",
+        email: "no-reply@ayurdaclinics.com" // You can change this to a verified sender if needed
       },
+      to: [
+        {
+          email: to
+        }
+      ],
+      subject: subject,
+      htmlContent: htmlContent
+    };
+
+    const response = await axios.post("https://api.brevo.com/v3/smtp/email", payload, {
+      headers: {
+        "api-key": process.env.BREVO_API_KEY,
+        "Content-Type": "application/json",
+        "accept": "application/json"
+      }
     });
 
-    // 1. Log the exact recipient email address before sendMail()
-    console.log(`[Email Flow Debug Helper] Recipient email BEFORE sendMail(): "${to}"`);
-
-    const info = await transporter.sendMail({
-      from: `"${process.env.EMAIL_FROM_NAME || 'Ayurda Clinics'}" <${process.env.SMTP_FROM_EMAIL || process.env.SENDER_EMAIL || process.env.EMAIL_USER || process.env.SMTP_USER}>`,
-      to,
-      subject,
-      html: htmlContent,
-    });
-
-    // 2. Log info.accepted, info.rejected, info.response, and info.messageId after sendMail()
-    console.log(`[Email Flow Debug Helper] sendMail() completed successfully!`);
-    console.log(`  - info.accepted: ${JSON.stringify(info.accepted)}`);
-    console.log(`  - info.rejected: ${JSON.stringify(info.rejected)}`);
-    console.log(`  - info.response: ${JSON.stringify(info.response)}`);
-    console.log(`  - info.messageId: ${JSON.stringify(info.messageId)}`);
-
-    console.log("Email notification sent successfully:", info.messageId);
+    console.log(`[Email Flow] Email sent successfully to "${to}". Message ID:`, response.data?.messageId);
     return true;
   } catch (error) {
-    console.error(`[Email Flow Debug Helper] sendMail() error for recipient "${to}":`, error);
-    console.error("Error sending email notification:", error);
+    console.error(`[Email Flow Error] Failed to send email to "${to}":`, error.response?.data || error.message);
     return false;
   }
 };

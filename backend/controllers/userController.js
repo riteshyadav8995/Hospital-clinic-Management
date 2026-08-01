@@ -2,19 +2,82 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const db = require("../db");
 const { sendRegistrationNotifications } = require("../utils/notificationService");
+const { sendEmail } = require("../utils/notificationHelper");
+
+// Helper to generate 6 digit OTP
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+// 0. SEND REGISTER OTP
+exports.sendRegisterOtp = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ success: false, message: "Email is required" });
+
+  try {
+    const existing = await db.query("SELECT id FROM users WHERE email = $1", [email]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ success: false, message: "Email is already registered" });
+    }
+
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60000); // 10 mins
+
+    // Clear old OTPs for this email and type
+    await db.query("DELETE FROM otps WHERE email = $1 AND type = 'register'", [email]);
+    
+    // Insert new OTP
+    await db.query(
+      `INSERT INTO otps (email, otp, type, expires_at) VALUES ($1, $2, 'register', $3)`,
+       [email, otp, expiresAt]
+    );
+
+    // Send email
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+        <h2>Verify Your Email</h2>
+        <p>Thank you for registering at Ayurda Clinics.</p>
+        <p>Your OTP for registration is: <strong style="font-size: 24px; color: #0f766e;">${otp}</strong></p>
+        <p>This code will expire in 10 minutes.</p>
+      </div>
+    `;
+    await sendEmail(email, "Ayurda Clinics - Registration OTP", emailHtml);
+
+    res.json({ success: true, message: "OTP sent to your email" });
+  } catch (error) {
+    console.error("OTP generation error:", error);
+    res.status(500).json({ success: false, message: "Failed to send OTP", error: error.message });
+  }
+};
 
 // 1. REGISTER USER
 exports.register = async (req, res) => {
-  const { name, email, phone, password } = req.body;
+  const { name, email, phone, password, otp } = req.body;
 
-  if (!name || !email || !phone || !password) {
+  if (!name || !email || !phone || !password || !otp) {
     return res.status(400).json({
       success: false,
-      message: "All fields are required",
+      message: "All fields including OTP are required",
     });
   }
 
   try {
+    // Check OTP
+    const otpRecord = await db.query(
+      "SELECT * FROM otps WHERE email = $1 AND type = 'register' ORDER BY created_at DESC LIMIT 1",
+      [email]
+    );
+
+    if (otpRecord.rows.length === 0) {
+      return res.status(400).json({ success: false, message: "Please request an OTP first" });
+    }
+
+    const validOtp = otpRecord.rows[0];
+    if (validOtp.otp !== otp) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+    if (new Date(validOtp.expires_at) < new Date()) {
+      return res.status(400).json({ success: false, message: "OTP has expired. Please request a new one." });
+    }
+
     // Check if email already exists
     const existing = await db.query(
       "SELECT * FROM users WHERE email = $1",
@@ -59,6 +122,9 @@ exports.register = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
+
+    // Delete used OTP
+    await db.query("DELETE FROM otps WHERE email = $1 AND type = 'register'", [email]);
 
     // Send response immediately — notifications run in background
     res.status(201).json({
@@ -320,7 +386,7 @@ exports.getAppointments = async (req, res) => {
       FROM appointments a
       LEFT JOIN doctors d ON a.doctor_id = d.id
       LEFT JOIN users u ON d.user_id = u.id
-      WHERE a.patient_id = $1 
+      WHERE a.patient_id = $1 AND a.status != 'Pending Payment'
       ORDER BY a.date DESC, a.created_at DESC
     `, [patientId]);
 
@@ -369,5 +435,88 @@ exports.getLabReports = async (req, res) => {
   } catch (error) {
     console.error("Fetch lab reports error:", error);
     res.status(500).json({ success: false, message: "Error fetching lab reports" });
+  }
+};
+
+// ================= FORGOT PASSWORD =================
+exports.sendForgotPasswordOtp = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ success: false, message: "Email is required" });
+
+  try {
+    const user = await db.query(
+      "SELECT u.id, r.role_name FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.email = $1", 
+      [email]
+    );
+
+    if (user.rows.length === 0 || user.rows[0].role_name !== "Patient") {
+      return res.status(404).json({ success: false, message: "No patient account found with this email" });
+    }
+
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60000); // 10 mins
+
+    await db.query("DELETE FROM otps WHERE email = $1 AND type = 'forgot_password'", [email]);
+    await db.query(
+      `INSERT INTO otps (email, otp, type, expires_at) VALUES ($1, $2, 'forgot_password', $3)`,
+       [email, otp, expiresAt]
+    );
+
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+        <h2>Password Reset Request</h2>
+        <p>We received a request to reset your password at Ayurda Clinics.</p>
+        <p>Your OTP for password reset is: <strong style="font-size: 24px; color: #0f766e;">${otp}</strong></p>
+        <p>This code will expire in 10 minutes. If you did not request this, please ignore this email.</p>
+      </div>
+    `;
+    await sendEmail(email, "Ayurda Clinics - Password Reset OTP", emailHtml);
+
+    res.json({ success: true, message: "Password reset OTP sent to your email" });
+  } catch (error) {
+    console.error("Forgot password OTP error:", error);
+    res.status(500).json({ success: false, message: "Failed to send reset OTP", error: error.message });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({ success: false, message: "Email, OTP, and new password are required" });
+  }
+
+  try {
+    // Check OTP
+    const otpRecord = await db.query(
+      "SELECT * FROM otps WHERE email = $1 AND type = 'forgot_password' ORDER BY created_at DESC LIMIT 1",
+      [email]
+    );
+
+    if (otpRecord.rows.length === 0) {
+      return res.status(400).json({ success: false, message: "Please request an OTP first" });
+    }
+
+    const validOtp = otpRecord.rows[0];
+    if (validOtp.otp !== otp) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+    if (new Date(validOtp.expires_at) < new Date()) {
+      return res.status(400).json({ success: false, message: "OTP has expired. Please request a new one." });
+    }
+
+    // Update password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    await db.query("UPDATE users SET password_hash = $1 WHERE email = $2", [hashedPassword, email]);
+
+    // Delete used OTP
+    await db.query("DELETE FROM otps WHERE email = $1 AND type = 'forgot_password'", [email]);
+
+    res.json({ success: true, message: "Password has been successfully reset. You can now login." });
+  } catch (error) {
+    console.error("Password reset error:", error);
+    res.status(500).json({ success: false, message: "Failed to reset password", error: error.message });
   }
 };

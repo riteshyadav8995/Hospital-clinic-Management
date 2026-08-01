@@ -321,7 +321,7 @@ function Appointment() {
           setSuccessMsg("Appointment booked & mock payment verified successfully!");
           resetForm();
         } else {
-          setErrorMsg("Payment cancelled. Appointment inquiry saved as Unpaid.");
+          setErrorMsg("Payment cancelled. Your appointment was not booked.");
         }
         setLoading(false);
         return;
@@ -372,7 +372,7 @@ function Appointment() {
         },
         modal: {
           ondismiss: () => {
-            setErrorMsg("Payment checkout closed. Appointment marked as Unpaid.");
+            setErrorMsg("Payment checkout closed. Your appointment was not booked.");
             setLoading(false);
           },
         },

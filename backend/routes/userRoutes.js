@@ -10,11 +10,17 @@ const {
   changePassword,
   getAppointments,
   getLabReports,
+  sendRegisterOtp,
+  sendForgotPasswordOtp,
+  resetPassword
 } = require("../controllers/userController");
 
 // Public routes
+router.post("/register-otp", sendRegisterOtp);
 router.post("/register", register);
 router.post("/login", login);
+router.post("/forgot-password-otp", sendForgotPasswordOtp);
+router.post("/forgot-password-reset", resetPassword);
 
 // Protected patient routes
 router.get("/profile", patientAuthMiddleware, getProfile);

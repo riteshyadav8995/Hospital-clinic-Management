@@ -10,7 +10,7 @@ const initDatabase = async () => {
       "lab_results", "lab_orders", "prescriptions", "consultations", "appointments",
       "doctors", "patients", "users", "branches", "roles",
       "admissions", "beds", "wards", "notification_logs", "faqs",
-      "success_stories", "testimonials", "services", "admins"
+      "success_stories", "testimonials", "services", "admins", "otps"
     ];
 
     for (const table of tablesToDrop) {
@@ -25,6 +25,18 @@ const initDatabase = async () => {
         id SERIAL PRIMARY KEY,
         role_name VARCHAR(100) UNIQUE NOT NULL,
         permissions_json JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // 1.5 OTPS
+    await db.query(`
+      CREATE TABLE otps (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        otp VARCHAR(10) NOT NULL,
+        type VARCHAR(50) NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);

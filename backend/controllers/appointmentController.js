@@ -47,7 +47,7 @@ const createAppointment = async (req, res) => {
     const sql = `
       INSERT INTO appointments 
       (patient_id, doctor_id, date, time, token_no, status) 
-      VALUES ($1, $2, $3, $4, $5, 'Booked') RETURNING id
+      VALUES ($1, $2, $3, $4, $5, 'Pending Payment') RETURNING id
     `;
 
     const result = await db.query(sql, [
@@ -109,6 +109,7 @@ const getAppointments = async (req, res) => {
     JOIN patients p ON a.patient_id = p.id
     JOIN doctors d ON a.doctor_id = d.id
     JOIN users u ON d.user_id = u.id
+    WHERE a.status != 'Pending Payment'
     ORDER BY a.created_at DESC
   `;
 
@@ -233,7 +234,7 @@ const getQueue = async (req, res) => {
     JOIN patients p ON a.patient_id = p.id
     JOIN doctors d ON a.doctor_id = d.id
     JOIN users u ON d.user_id = u.id
-    WHERE a.date = $1
+    WHERE a.date = $1 AND a.status != 'Pending Payment'
     ORDER BY a.token_no ASC
   `;
 
@@ -264,7 +265,7 @@ const getDoctorQueue = async (req, res) => {
       FROM appointments a
       JOIN patients p ON a.patient_id = p.id
       JOIN doctors d ON a.doctor_id = d.id
-      WHERE a.doctor_id = $1
+      WHERE a.doctor_id = $1 AND a.status != 'Pending Payment'
       ORDER BY a.date ASC, a.token_no ASC
     `;
     const result = await db.query(sql, [doctor_id]);
@@ -289,7 +290,7 @@ const getBookedSlots = async (req, res) => {
     const sql = `
       SELECT time 
       FROM appointments 
-      WHERE doctor_id = $1 AND date = $2 AND status != 'Cancelled'
+      WHERE doctor_id = $1 AND date = $2 AND status NOT IN ('Cancelled', 'Pending Payment')
     `;
     const result = await db.query(sql, [doctor_id, date]);
     
