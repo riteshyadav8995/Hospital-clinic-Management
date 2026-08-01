@@ -137,6 +137,13 @@ exports.verifyPayment = async (req, res) => {
       const generatedSignature = hmac.digest("hex");
 
       if (generatedSignature !== razorpay_signature) {
+        console.error("Signature Mismatch!");
+        console.error("Expected (Generated):", generatedSignature);
+        console.error("Received (From Razorpay):", razorpay_signature);
+        console.error("Order ID:", razorpay_order_id);
+        console.error("Payment ID:", razorpay_payment_id);
+        console.error("Using Secret:", process.env.RAZORPAY_KEY_SECRET ? "***" + process.env.RAZORPAY_KEY_SECRET.slice(-4) : "UNDEFINED");
+
         return res.status(400).json({
           success: false,
           message: "Invalid payment signature verification failed",
