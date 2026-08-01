@@ -11,8 +11,8 @@ const sendEmail = async (to, subject, htmlContent) => {
   try {
     const payload = {
       sender: {
-        name: "Ayurda Clinics",
-        email: "no-reply@ayurdaclinics.com" // You can change this to a verified sender if needed
+        name: process.env.EMAIL_FROM_NAME || "Ayurda Clinics",
+        email: process.env.SENDER_EMAIL || process.env.SMTP_FROM_EMAIL || "rky594237@gmail.com"
       },
       to: [
         {
