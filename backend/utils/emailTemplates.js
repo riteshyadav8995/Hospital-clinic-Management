@@ -174,9 +174,9 @@ const appointmentConfirmationTemplate = ({ name, department, preferred_date, pre
 
 /**
  * Admin alert email sent when a new appointment is booked.
- * @param {{ name: string, phone: string, email: string, department: string, preferred_date: string, preferred_time: string, appointmentId: number, fee: number }} param0
+ * @param {{ name: string, phone: string, email: string, department: string, preferred_date: string, preferred_time: string, appointmentId: number, fee: number, message?: string }} param0
  */
-const adminAppointmentAlertTemplate = ({ name, phone, email, department, preferred_date, preferred_time, appointmentId, fee }) => {
+const adminAppointmentAlertTemplate = ({ name, phone, email, department, preferred_date, preferred_time, appointmentId, fee, message }) => {
   const formattedDate = preferred_date
     ? new Date(preferred_date).toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
     : "Not specified";
@@ -196,6 +196,7 @@ const adminAppointmentAlertTemplate = ({ name, phone, email, department, preferr
         <tr><td style="padding:6px 0;border-top:1px solid #fecaca;"><span style="color:#6b7280;font-size:12px;">Preferred Date:</span><br/><strong>${formattedDate}</strong></td></tr>
         <tr><td style="padding:6px 0;border-top:1px solid #fecaca;"><span style="color:#6b7280;font-size:12px;">Preferred Time:</span><br/><strong>${preferred_time || "Flexible"}</strong></td></tr>
         <tr><td style="padding:6px 0;border-top:1px solid #fecaca;"><span style="color:#6b7280;font-size:12px;">Consultation Fee:</span><br/><strong>₹${fee}</strong></td></tr>
+        ${message ? `<tr><td style="padding:6px 0;border-top:1px solid #fecaca;"><span style="color:#6b7280;font-size:12px;">Patient Concern:</span><br/><strong>${message}</strong></td></tr>` : ""}
       </table>
     </div>
 
@@ -209,9 +210,9 @@ const adminAppointmentAlertTemplate = ({ name, phone, email, department, preferr
 
 /**
  * Doctor alert email sent when a new appointment is booked.
- * @param {{ name: string, phone: string, email: string, department: string, preferred_date: string, preferred_time: string, appointmentId: number, fee: number, doctorName: string }} param0
+ * @param {{ name: string, phone: string, email: string, department: string, preferred_date: string, preferred_time: string, appointmentId: number, fee: number, doctorName: string, message?: string }} param0
  */
-const doctorAppointmentAlertTemplate = ({ name, phone, email, department, preferred_date, preferred_time, appointmentId, fee, doctorName }) => {
+const doctorAppointmentAlertTemplate = ({ name, phone, email, department, preferred_date, preferred_time, appointmentId, fee, doctorName, message }) => {
   const formattedDate = preferred_date
     ? new Date(preferred_date).toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
     : "Not specified";
@@ -228,6 +229,7 @@ const doctorAppointmentAlertTemplate = ({ name, phone, email, department, prefer
         <tr><td style="padding:6px 0;border-top:1px solid #99f6e4;"><span style="color:#6b7280;font-size:12px;">Preferred Date:</span><br/><strong>${formattedDate}</strong></td></tr>
         <tr><td style="padding:6px 0;border-top:1px solid #99f6e4;"><span style="color:#6b7280;font-size:12px;">Preferred Time:</span><br/><strong>${preferred_time || "Flexible"}</strong></td></tr>
         <tr><td style="padding:6px 0;border-top:1px solid #99f6e4;"><span style="color:#6b7280;font-size:12px;">Consultation Fee:</span><br/><strong>₹${fee}</strong></td></tr>
+        ${message ? `<tr><td style="padding:6px 0;border-top:1px solid #99f6e4;"><span style="color:#6b7280;font-size:12px;">Patient Concern / Problem:</span><br/><strong>${message}</strong></td></tr>` : ""}
       </table>
     </div>
 

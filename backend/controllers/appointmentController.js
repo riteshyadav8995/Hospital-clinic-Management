@@ -46,8 +46,8 @@ const createAppointment = async (req, res) => {
     // 4. Insert appointment
     const sql = `
       INSERT INTO appointments 
-      (patient_id, doctor_id, date, time, token_no, status) 
-      VALUES ($1, $2, $3, $4, $5, 'Pending Payment') RETURNING id
+      (patient_id, doctor_id, date, time, token_no, status, message) 
+      VALUES ($1, $2, $3, $4, $5, 'Pending Payment', $6) RETURNING id
     `;
 
     const result = await db.query(sql, [
@@ -55,7 +55,8 @@ const createAppointment = async (req, res) => {
       doctor_id,
       preferred_date,
       preferred_time || null,
-      token_no
+      token_no,
+      message || null
     ]);
 
     const appointmentId = result.rows[0].id;
@@ -72,24 +73,6 @@ const createAppointment = async (req, res) => {
       message: "Appointment booked successfully",
       appointmentId,
       token_no
-    });
-
-    setImmediate(() => {
-      sendAppointmentNotifications({
-        userId: user_id,
-        name: patient.name,
-        email: req.user.email || null,
-        phone: patient.phone,
-        department: doctor.department,
-        preferred_date: preferred_date || null,
-        preferred_time: preferred_time || null,
-        appointmentId,
-        fee,
-        doctorEmail: doctor.email,
-        doctorName: doctor.name
-      }).catch((err) =>
-        console.error("[Appointment] Notification error (non-fatal):", err.message)
-      );
     });
 
   } catch (error) {

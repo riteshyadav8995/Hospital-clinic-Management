@@ -16,16 +16,7 @@
 const nodemailer = require("nodemailer");
 const db = require("../db");
 
-// ─── NODEMAILER TRANSPORTER ────────────────────────────────────────────────────
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.SMTP_PORT || "587", 10),
-  secure: false,        // true for port 465, false for 587
-  auth: {
-    user: process.env.EMAIL_USER || process.env.SMTP_USER,
-    pass: process.env.EMAIL_PASS || process.env.SMTP_PASS,
-  },
-});
+// Removing nodemailer as we are migrating to Brevo REST API
 
 // ─── TWILIO CLIENT (lazy init so missing creds don't crash the server) ─────────
 let twilioClient = null;
@@ -76,31 +67,61 @@ const logNotification = async ({ userId = null, type, event, status, errorMessag
  */
 const sendEmail = async ({ to, subject, html, userId = null, eventType = "General" }) => {
   try {
-    // 1. Log the exact recipient email address before sendMail()
-    console.log(`[Email Flow Debug] Recipient email BEFORE sendMail(): "${to}" (eventType: ${eventType})`);
+    let apiKey = process.env.BREVO_API_KEY;
+    const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SENDER_EMAIL || "ritesh.kumar@nxtwave.co.in";
 
-    const mailOptions = {
-      from: `"${process.env.CLINIC_NAME || "Ayurda Hospital and Clinics"}" <${process.env.SMTP_FROM_EMAIL || process.env.SENDER_EMAIL || process.env.EMAIL_USER || process.env.SMTP_USER}>`,
-      to,
-      subject,
-      html,
+    if (!apiKey && process.env.BREVO_MCP_API_KEY) {
+      try {
+        const decoded = Buffer.from(process.env.BREVO_MCP_API_KEY, 'base64').toString();
+        apiKey = JSON.parse(decoded).api_key;
+      } catch (e) {
+        console.error('Failed to parse BREVO_MCP_API_KEY', e);
+      }
+    }
+
+    if (!apiKey) {
+      console.warn("BREVO_API_KEY not configured in .env. Skipping email sending.");
+      return false;
+    }
+
+    const payload = {
+      sender: {
+        name: process.env.CLINIC_NAME || "Ayurda Hospital and Clinics",
+        email: fromEmail
+      },
+      to: [{ email: to }],
+      subject: subject,
+      htmlContent: html
     };
 
-    const info = await transporter.sendMail(mailOptions);
+    console.log(`[Email Flow Debug] Attempting to send email via Brevo...`);
+    console.log(`[Email Flow Debug] FROM: ${payload.sender.email}`);
+    console.log(`[Email Flow Debug] TO: ${payload.to[0].email}`);
+    console.log(`[Email Flow Debug] eventType: ${eventType}`);
 
-    // 2. Log info.accepted, info.rejected, info.response, and info.messageId after sendMail()
-    console.log(`[Email Flow Debug] sendMail() completed successfully!`);
-    console.log(`  - info.accepted: ${JSON.stringify(info.accepted)}`);
-    console.log(`  - info.rejected: ${JSON.stringify(info.rejected)}`);
-    console.log(`  - info.response: ${JSON.stringify(info.response)}`);
-    console.log(`  - info.messageId: ${JSON.stringify(info.messageId)}`);
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "api-key": apiKey,
+        "Content-Type": "application/json",
+        "accept": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
 
-    console.log(`[Email] ✅ Sent to ${to} — ${subject}`);
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`Brevo API error: ${response.status} ${errorData}`);
+    }
+
+    const data = await response.json();
+    console.log(`[Email] ✅ Sent to ${to} — ${subject} (Message ID: ${data.messageId || 'Success'})`);
+    
     await logNotification({ userId, type: "Email", event: eventType, status: "Success" });
     return true;
 
   } catch (err) {
-    console.error(`[Email Flow Debug] sendMail() error for recipient "${to}":`, err);
+    console.error(`[Email Flow Debug] sendMail() error for recipient "${to}":`, err.message);
     console.error(`[Email] ❌ Failed to ${to} — ${err.message}`);
     await logNotification({ userId, type: "Email", event: eventType, status: "Failed", errorMessage: err.message });
     return false;
@@ -196,10 +217,10 @@ const sendRegistrationNotifications = async ({ userId, name, email, phone }) => 
  * Send appointment confirmation email to patient + alert emails to admin and doctor.
  * Fire-and-forget (never throws).
  * @param {{ userId: number, name: string, email: string, phone: string, department: string,
- *           preferred_date: string, preferred_time: string, appointmentId: number, fee: number, doctorEmail: string, doctorName: string }} param0
+ *           preferred_date: string, preferred_time: string, appointmentId: number, fee: number, doctorEmail: string, doctorName: string, message?: string }} param0
  */
 const sendAppointmentNotifications = async ({
-  userId, name, email, phone, department, preferred_date, preferred_time, appointmentId, fee, doctorEmail, doctorName
+  userId, name, email, phone, department, preferred_date, preferred_time, appointmentId, fee, doctorEmail, doctorName, message
 }) => {
   const { appointmentConfirmationTemplate, adminAppointmentAlertTemplate, doctorAppointmentAlertTemplate } = require("./emailTemplates");
 
@@ -231,7 +252,7 @@ const sendAppointmentNotifications = async ({
   if (adminEmail) {
     let adminHtml;
     try {
-      adminHtml = adminAppointmentAlertTemplate({ name, phone, email, department, preferred_date, preferred_time, appointmentId, fee });
+      adminHtml = adminAppointmentAlertTemplate({ name, phone, email, department, preferred_date, preferred_time, appointmentId, fee, message });
       console.log(`[Email Flow Debug] adminAppointmentAlertTemplate successfully generated HTML for "${adminEmail}"`);
     } catch (templateErr) {
       console.error(`[Email Flow Debug] adminAppointmentAlertTemplate threw a hidden error:`, templateErr);
@@ -252,7 +273,7 @@ const sendAppointmentNotifications = async ({
   if (doctorEmail) {
     let doctorHtml;
     try {
-      doctorHtml = doctorAppointmentAlertTemplate({ name, phone, email, department, preferred_date, preferred_time, appointmentId, fee, doctorName });
+      doctorHtml = doctorAppointmentAlertTemplate({ name, phone, email, department, preferred_date, preferred_time, appointmentId, fee, doctorName, message });
       console.log(`[Email Flow Debug] doctorAppointmentAlertTemplate successfully generated HTML for "${doctorEmail}"`);
     } catch (templateErr) {
       console.error(`[Email Flow Debug] doctorAppointmentAlertTemplate threw a hidden error:`, templateErr);

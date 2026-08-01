@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const db = require("../db");
-const { sendEmail, sendWhatsApp } = require("../utils/notificationHelper");
+const { sendWhatsApp } = require("../utils/notificationHelper");
+const { sendAppointmentNotifications } = require("../utils/notificationService");
 
 // Create Razorpay Order
 exports.createOrder = async (req, res) => {
@@ -154,66 +155,47 @@ exports.verifyPayment = async (req, res) => {
       [razorpay_payment_id, razorpay_signature || "mock_sig", appointmentId]
     );
 
-    // Fetch updated appointment details for notifications
+    // Fetch updated appointment details for notifications, joining users/doctors/patients
     const fetchResult = await db.query(
-      "SELECT * FROM appointments WHERE id = $1",
+      `SELECT a.*, 
+              p.name as patient_name, p.phone as patient_phone, u_pat.email as patient_email,
+              d.department_name as department, 
+              u_doc.name as doctor_name, u_doc.email as doctor_email
+       FROM appointments a
+       JOIN patients p ON a.patient_id = p.id
+       JOIN users u_pat ON p.user_id = u_pat.id
+       JOIN doctors d ON a.doctor_id = d.id
+       JOIN users u_doc ON d.user_id = u_doc.id
+       WHERE a.id = $1`,
       [appointmentId]
     );
 
     if (fetchResult.rows.length > 0) {
-      const appt = {
-        ...fetchResult.rows[0],
-        name: fetchResult.rows[0].patient_name || fetchResult.rows[0].name || "",
-        email: fetchResult.rows[0].email || null,
-      };
+      const appt = fetchResult.rows[0];
       
-      // Send Email Notification if email exists
-      if (appt.email) {
-        const emailSubject = `Appointment Confirmed - Ayurda Hospital and Clinics`;
-        const emailBody = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px;">
-            <h2 style="color: #0f766e; text-align: center;">Ayurda Hospital and Clinics Booking Confirmation</h2>
-            <p>Dear <strong>${appt.name}</strong>,</p>
-            <p>Thank you for booking with us. Your appointment inquiry has been paid and confirmed successfully!</p>
-            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 8px 0; color: #718096;"><strong>Department:</strong></td>
-                <td style="padding: 8px 0;">${appt.department}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0; color: #718096;"><strong>Preferred Date:</strong></td>
-                <td style="padding: 8px 0;">${new Date(appt.preferred_date).toLocaleDateString()}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0; color: #718096;"><strong>Preferred Session:</strong></td>
-                <td style="padding: 8px 0;">${appt.preferred_time || "Not selected"}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0; color: #718096;"><strong>Payment Status:</strong></td>
-                <td style="padding: 8px 0; color: #16a34a; font-weight: bold;">Paid</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0; color: #718096;"><strong>Transaction ID:</strong></td>
-                <td style="padding: 8px 0; font-family: monospace;">${razorpay_payment_id}</td>
-              </tr>
-            </table>
-            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-            <p style="text-align: center; color: #718096; font-size: 12px;">This is an automated confirmation email. For any queries, call us at 7799889398.</p>
-          </div>
-        `;
+      // Dispatch emails (Patient, Doctor, Admin)
+      setImmediate(() => {
+        sendAppointmentNotifications({
+          userId: appt.patient_id, // using patient_id or user_id for logging
+          name: appt.patient_name,
+          email: appt.patient_email || null,
+          phone: appt.patient_phone,
+          department: appt.department,
+          preferred_date: appt.date || null,
+          preferred_time: appt.time || null,
+          appointmentId: appt.id,
+          fee: appt.consultation_fee,
+          doctorEmail: appt.doctor_email,
+          doctorName: appt.doctor_name,
+          message: appt.message || ""
+        }).catch((err) =>
+          console.error("[Payment] Notification error (non-fatal):", err.message)
+        );
+      });
 
-        await sendEmail({
-          to: appt.email,
-          subject: emailSubject,
-          html: emailBody,
-          eventType: "Payment Confirmed"
-        });
-      }
-
-      // Send WhatsApp Notification
-      const whatsappMsg = `Hi ${appt.name}, your Ayurda Hospital and Clinics appointment for ${appt.department} on ${new Date(appt.preferred_date).toLocaleDateString()} (${appt.preferred_time || "Anytime"}) is CONFIRMED. Payment of ₹500 is successfully verified. Txn ID: ${razorpay_payment_id}. Thank you!`;
-      await sendWhatsApp(appt.phone, whatsappMsg);
+      // Send WhatsApp Notification to Patient
+      const whatsappMsg = `Hi ${appt.patient_name}, your Ayurda Hospital and Clinics appointment for ${appt.department} on ${new Date(appt.date).toLocaleDateString()} (${appt.time || "Anytime"}) is CONFIRMED. Payment of ₹${appt.consultation_fee} is successfully verified. Txn ID: ${razorpay_payment_id}. Thank you!`;
+      await sendWhatsApp(appt.patient_phone, whatsappMsg);
     }
 
     res.json({
