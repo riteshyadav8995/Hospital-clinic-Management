@@ -331,11 +331,11 @@ function PatientDashboard() {
         </div>
 
         {/* MAIN BODY NAVIGATION PANEL */}
-        <div className="flex flex-col md:flex-row gap-6 md:gap-8 mt-8">
+        <div className="flex flex-col md:flex-row items-start gap-6 md:gap-8 mt-8 pb-10">
           
           {/* STICKY SIDEBAR NAVIGATION */}
-          <div className="w-full md:w-72 shrink-0 space-y-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            <div className="md:sticky md:top-10 space-y-4">
+          <div className="w-full md:w-72 shrink-0 space-y-4 md:sticky md:top-6 h-[calc(100vh-240px)] overflow-y-auto custom-scrollbar pr-2 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+            <div className="space-y-4">
               
               {/* BOOKINGS HISTORY PARENT */}
               <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200 overflow-hidden shadow-sm transition-all">
@@ -418,7 +418,7 @@ function PatientDashboard() {
           </div>
 
           {/* MAIN CONTENT AREA */}
-          <div className="flex-1 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+          <div className="flex-1 h-[calc(100vh-240px)] overflow-y-auto custom-scrollbar pr-2 animate-slide-up" style={{ animationDelay: '0.2s' }}>
             
             {/* TAB 1: APPOINTMENTS HISTORY */}
             {activeTab === "appointments" && (
