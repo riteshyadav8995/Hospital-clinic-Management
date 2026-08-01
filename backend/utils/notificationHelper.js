@@ -24,7 +24,7 @@ const sendEmail = async (to, subject, htmlContent) => {
     const payload = {
       sender: {
         name: process.env.EMAIL_FROM_NAME || "Ayurda Clinics",
-        email: fromEmail || "rky594237@gmail.com"
+        email: fromEmail || "ritesh.kumar@nxtwave.co.in"
       },
       to: [
         {
@@ -34,6 +34,10 @@ const sendEmail = async (to, subject, htmlContent) => {
       subject: subject,
       htmlContent: htmlContent
     };
+
+    console.log(`[Email Debug] Attempting to send email via Brevo...`);
+    console.log(`[Email Debug] FROM: ${payload.sender.email}`);
+    console.log(`[Email Debug] TO: ${payload.to[0].email}`);
 
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",

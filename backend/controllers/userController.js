@@ -39,7 +39,10 @@ exports.sendRegisterOtp = async (req, res) => {
         <p>This code will expire in 10 minutes.</p>
       </div>
     `;
-    await sendEmail(email, "Ayurda Clinics - Registration OTP", emailHtml);
+    const isSent = await sendEmail(email, "Ayurda Clinics - Registration OTP", emailHtml);
+    if (!isSent) {
+      return res.status(500).json({ success: false, message: "Failed to dispatch email. Please check server configuration." });
+    }
 
     res.json({ success: true, message: "OTP sent to your email" });
   } catch (error) {
