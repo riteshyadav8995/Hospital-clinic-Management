@@ -320,6 +320,7 @@ function Appointment() {
 
           setSuccessMsg("Appointment booked & mock payment verified successfully!");
           resetForm();
+          setTimeout(() => navigate("/dashboard"), 1500);
         } else {
           setErrorMsg("Payment cancelled. Your appointment was not booked.");
         }
@@ -355,6 +356,7 @@ function Appointment() {
 
             setSuccessMsg("Appointment booked & payment completed successfully!");
             resetForm();
+            setTimeout(() => navigate("/dashboard"), 1500);
           } catch (err) {
             console.error("Signature verification error:", err);
             setErrorMsg("Payment signature verification failed.");

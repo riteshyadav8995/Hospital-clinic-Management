@@ -32,9 +32,15 @@ const saveBase64Image = (base64Str) => {
   }
 };
 
+let cachedDoctors = null;
+
 // GET ALL DOCTORS
 exports.getDoctors = async (req, res) => {
   try {
+    if (cachedDoctors) {
+      return res.json(cachedDoctors);
+    }
+
     const result = await db.query(`
       SELECT d.*, u.name, u.email, u.phone 
       FROM doctors d
@@ -42,6 +48,7 @@ exports.getDoctors = async (req, res) => {
       ORDER BY d.id DESC
     `);
 
+    cachedDoctors = result.rows;
     res.json(result.rows);
   } catch (error) {
     console.error(error);
@@ -115,6 +122,8 @@ exports.addDoctor = async (req, res) => {
         availability || "Available"
       ]
     );
+
+    cachedDoctors = null; // Invalidate cache
 
     res.json({
       success: true,
@@ -201,6 +210,8 @@ exports.updateDoctor = async (req, res) => {
       });
     }
 
+    cachedDoctors = null; // Invalidate cache
+
     res.json({
       success: true,
       message: "Doctor updated successfully"
@@ -218,6 +229,13 @@ exports.updateDoctor = async (req, res) => {
 // DELETE DOCTOR
 exports.deleteDoctor = async (req, res) => {
   try {
+    // Need to get user_id first
+    const docRes = await db.query("SELECT user_id FROM doctors WHERE id = $1", [req.params.id]);
+    if (docRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Doctor not found" });
+    }
+    const userId = docRes.rows[0].user_id;
+
     const result = await db.query(
       "DELETE FROM doctors WHERE id=$1",
       [req.params.id]
@@ -229,6 +247,11 @@ exports.deleteDoctor = async (req, res) => {
         message: "Doctor not found"
       });
     }
+
+    // Also delete user record to clean up (cascading might handle this depending on DB setup, but explicit is safer)
+    await db.query("DELETE FROM users WHERE id = $1", [userId]);
+
+    cachedDoctors = null; // Invalidate cache
 
     res.json({
       success: true,
