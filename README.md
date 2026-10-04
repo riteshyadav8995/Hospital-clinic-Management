@@ -1,116 +1,147 @@
-# Ayurda Hospital and Clinics
+# Hospital & Clinic Management System
 
-A comprehensive, full-stack hospital and clinic management system built with modern web technologies: React, Node.js, Express, and PostgreSQL. It streamlines patient care, administrative tasks, and clinic operations into a single, fully responsive platform.
+A full-stack healthcare operations platform designed to manage patient journeys, appointments, staff workflows, billing, pharmacy, laboratory processes, admissions, and real-time queues from one system.
 
-## Features
+## What this project demonstrates
 
-### 🌟 New & Advanced Capabilities
-* **Role-Based Access Control (RBAC):** Tailored dashboard experiences and permissions for Super Admins, Doctors, Nurses, Receptionists, Pharmacists, Lab Technicians, and Accountants.
-* **Integrated Payments (Razorpay):** Secure, seamless payment processing for appointment fees and billing, including a built-in mock mode for developers.
-* **Full Mobile Responsiveness:** The entire application (both public pages and complex admin dashboards) has been meticulously optimized for all devices (mobile, tablet, desktop) using modern CSS Grid/Flexbox and responsive data tables.
-* **Real-time Queue Management:** Live tracking of patient flow for doctors and receptionists, shifting patients through statuses (Waiting, In-Consultation, Completed).
+- Role-based enterprise application design
+- Healthcare workflow automation
+- Secure authentication and access control
+- Payment and billing integration
+- Real-time operational tracking
+- Responsive dashboards for multiple user roles
 
-### 🏥 Patient Portal
-* **User Authentication:** Secure registration, login, and password management.
-* **Appointment Booking:** Dynamic date and time slot selection based on doctor availability, with automatic Razorpay checkout integration.
-* **Patient Dashboard:** A dedicated space for patients to view upcoming consultations, check past histories, and download Lab Reports (PDFs).
-* **AI Symptom Guide & Doctors Directory:** Interactive public pages to help patients find the right care.
+## Key Features
 
-### ⚙️ Admin & Staff Operations
-* **Advanced Analytics Dashboard:** Real-time metrics on revenue, patient count, today's appointments, and pending dues with interactive Recharts.
-* **Admissions & Wards:** Track ward availability, assign beds, and manage patient admissions/discharges efficiently.
-* **Pharmacy & Inventory:** Keep track of medicine stock, dispense medicines to patients, and monitor low inventory.
-* **Laboratory Management:** Request lab tests from doctor consultations, process results, and generate downloadable reports for patients.
-* **Billing & Invoicing:** Centralized ledger for tracking patient expenses (consultations, pharmacy, labs) and collecting payments.
-* **Content Management:** Admins can easily manage FAQs, Testimonials, Success Stories, and Service pages dynamically.
+### Role-Based Access Control
+Dedicated permissions and dashboards for:
+
+- Super Admins
+- Doctors
+- Nurses
+- Receptionists
+- Pharmacists
+- Lab Technicians
+- Accountants
+- Patients
+
+### Patient Experience
+- Registration, login, and password management
+- Doctor discovery and appointment booking
+- Dynamic date and time-slot selection
+- Razorpay-powered appointment payments
+- Patient dashboard for consultations and history
+- Downloadable laboratory reports
+- AI symptom guide and doctor directory
+
+### Clinical & Operational Workflows
+- Real-time patient queue management
+- Appointment status tracking from waiting to consultation completion
+- Admissions, ward availability, and bed allocation
+- Pharmacy inventory and medicine dispensing
+- Laboratory test requests, processing, and report generation
+- Centralized billing and payment tracking
+
+### Administration
+- Analytics dashboard with revenue, patient, appointment, and dues metrics
+- Dynamic content management for FAQs, testimonials, success stories, and service pages
+- Responsive layouts optimized for mobile, tablet, and desktop
+
+### Notifications & Payments
+- Razorpay integration for online payments
+- Email notifications through Nodemailer
+- Twilio-powered communication support
 
 ## Tech Stack
 
-### Frontend
-* **React** (via Vite)
-* **Tailwind CSS** (for rapid, responsive styling)
-* **Axios** (for API communication)
-* **Recharts** (for data visualization)
-* **Lucide React** (for modern iconography)
-
-### Backend
-* **Node.js & Express.js**
-* **PostgreSQL (pg)** (Neon Serverless DB)
-* **JWT Authentication** (Access & Refresh tokens)
-* **Razorpay** (Payment Gateway Integration)
-* **Nodemailer & Twilio** (For Email & WhatsApp notifications)
+**Frontend:** React, Vite, Tailwind CSS, Axios, Recharts, Lucide React  
+**Backend:** Node.js, Express.js  
+**Database:** PostgreSQL / Neon  
+**Authentication:** JWT access and refresh tokens  
+**Integrations:** Razorpay, Nodemailer, Twilio
 
 ## Project Structure
 
 ```text
 hospital_clinic_management/
-├── frontend/          # React + Vite application (User & Admin UI)
-├── backend/           # Node.js + Express + PostgreSQL API
+├── frontend/      # Patient and staff interfaces
+├── backend/       # APIs, authentication, workflows and integrations
 ├── README.md
-└── package.json       # Root package.json for running both concurrently
+└── package.json
 ```
 
-## Installation & Setup
+## Getting Started
 
-### 1. Clone Repository
+### Clone
 
 ```bash
-git clone <repository-url>
-cd hospital_clinic_management
+git clone https://github.com/riteshyadav8995/Hospital-clinic-Management.git
+cd Hospital-clinic-Management
 ```
 
-### 2. Install All Dependencies
-
-From the root directory, run:
+### Install dependencies
 
 ```bash
 npm run install-all
 ```
-*(This will install dependencies in the root, frontend, and backend folders automatically).*
 
-### 3. Environment Variables
+### Environment Configuration
 
-Create a `.env` file in the `backend` folder and configure it:
+Create `backend/.env` and configure values such as:
 
 ```env
 PORT=5001
 JWT_SECRET=your_jwt_secret
 JWT_REFRESH_SECRET=your_refresh_secret
 
-# Database Configuration (PostgreSQL)
 DB_USER=your_db_user
-DB_PASSWORD=your_db_pass
+DB_PASSWORD=your_db_password
 DB_HOST=your_db_host
 DB_PORT=5432
 DB_NAME=your_db_name
 
-# Payments (Razorpay)
 RAZORPAY_KEY_ID=your_key
 RAZORPAY_KEY_SECRET=your_secret
 
-# Mail & WhatsApp Configurations (Optional)
 SMTP_USER=your_email
 SMTP_PASS=your_password
+
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 ```
 
-### 4. Run the Application
+Never commit real credentials or production secrets to the repository.
 
-You can start both the frontend and backend simultaneously from the root directory:
+### Run
 
 ```bash
 npm run dev
 ```
 
-## Admin Panel
+## Admin Access
 
-Admin routes and staff dashboards are accessible under:
-* `/admin/login`
-* `/admin/dashboard`
+Administrative interfaces are available under routes such as:
 
-*(Dashboard features dynamically adapt based on the assigned role of the logged-in staff member).*
+```text
+/admin/login
+/admin/dashboard
+```
+
+The dashboard adapts to the authenticated staff member's role and permissions.
+
+## Portfolio Highlights
+
+This project showcases experience relevant to freelance work involving:
+
+- Admin and staff dashboards
+- Role-Based Access Control
+- Appointment systems
+- Payment gateway integration
+- Complex database-backed workflows
+- Healthcare or service-management applications
+- REST API development
 
 ## Author
 
-**Ritesh Kumar**
+**Ritesh Kumar**  
+Full-Stack Developer — React.js, Node.js, PostgreSQL, MongoDB and AI integrations
